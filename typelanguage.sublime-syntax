@@ -1,0 +1,153 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/3/syntax.html
+name: Type Language
+file_extensions:
+  - tl
+scope: source.tl
+contexts:
+  main:
+    - include: comments
+    - include: triple-statement
+    - include: combinator-declaration
+  combinator-args:
+    - include: combinator-args-member
+  combinator-args-member:
+    - match: '([_$[:alpha:]][_$[:alnum:]]*)\s?(\:)\s?(([_$[:alpha:]][_$[:alnum:]]*)|(#))'
+      captures:
+        1: meta.definition.combinator.arg.tl variable.other.tl
+        2: punctuation.separator.key-value.tl
+        4: entity.name.type.tl
+        5: keyword.other.hash.tl
+      push:
+        - meta_scope: meta.combinator.arg.tl
+        - match: ""
+          pop: true
+  combinator-declaration:
+    - include: combinator-declaration-with-hash
+    - include: combinator-declaration-without-hash
+  combinator-declaration-with-hash:
+    - match: '(([_$\w]+)(\b\.))?([_$\w]*)(\b#)([[:alpha:][:alnum:]]*)\s*'
+      captures:
+        2: meta.definition.combinator.tl variable.other.tl
+        4: meta.definition.combinator.tl variable.other.tl
+        5: storage.type.tl
+        6: storage.type.tl
+      push:
+        - meta_scope: meta.combinator.declaration.tl
+        - match: \;\s*
+          pop: true
+        - match: \.
+          scope: punctuation.namespace.tl
+        - include: numbers
+        - include: keywords
+        - include: comments
+        - include: combinator-opt-args
+        - include: combinator-args
+        - include: combinator-result-type
+        - match: (=)\s*
+          captures:
+            1: keyword.operator.assignment.tl
+  combinator-declaration-without-hash:
+    - match: '(([_$\w]+)(\b\.))?([_$\w]*)(?= )'
+      captures:
+        2: meta.definition.combinator.tl variable.other.tl
+        4: meta.definition.combinator.tl variable.other.tl
+      push:
+        - meta_scope: meta.combinator.declaration.tl
+        - match: \;\s*
+          pop: true
+        - match: \.
+          scope: punctuation.namespace.tl
+        - include: numbers
+        - include: keywords
+        - include: comments
+        - include: combinator-opt-args
+        - include: combinator-args
+        - include: combinator-result-type
+        - match: (=)\s*
+          captures:
+            1: keyword.operator.assignment.tl
+  combinator-opt-args:
+    - match: '\{'
+      captures:
+        0: punctuation.definition.block.tl
+      push:
+        - meta_scope: meta.object.type.tl
+        - match: '\}'
+          captures:
+            0: punctuation.definition.block.tl
+          pop: true
+        - include: combinator-args-member
+  combinator-result-type:
+    - match: '([_$[:alpha:]][_$[:alnum:]]*)\s*(\.)'
+      captures:
+        1: entity.name.type.module.tl
+        2: punctuation.accessor.tl
+    - match: "[_$[:alpha:]][_$[:alnum:]]*"
+      scope: entity.name.type.tl
+  comments:
+    - match: /\*\*
+      captures:
+        0: punctuation.definition.comment.tl
+      push:
+        - meta_scope: comment.block.documentation.tl
+        - match: \*/
+          captures:
+            0: punctuation.definition.comment.tl
+          pop: true
+    - match: /\*
+      captures:
+        0: punctuation.definition.comment.tl
+      push:
+        - meta_scope: comment.block.tl
+        - match: \*/
+          captures:
+            0: punctuation.definition.comment.tl
+          pop: true
+    - match: (//).*$\n?
+      scope: comment.line.double-slash.tl
+      captures:
+        1: punctuation.definition.comment.tl
+  keywords:
+    - match: '\#'
+      scope: keyword.other.hash.tl
+    - match: \?
+      scope: keyword.other.questionmark.tl
+    - match: \%
+      scope: keyword.other.percent.tl
+  numbers:
+    - match: |-
+        (?x)
+        (?<!\$)(?:
+          (?:\b[0-9]+(\.)[0-9]+[eE][+-]?[0-9]+\b)| # 1.1E+3
+          (?:\b[0-9]+(\.)[eE][+-]?[0-9]+\b)|       # 1.E+3
+          (?:\B(\.)[0-9]+[eE][+-]?[0-9]+\b)|       # .1E+3
+          (?:\b[0-9]+[eE][+-]?[0-9]+\b)|            # 1E+3
+          (?:\b[0-9]+(\.)[0-9]+\b)|                # 1.1
+          (?:\b[0-9]+(\.)\B)|                      # 1.
+          (?:\B(\.)[0-9]+\b)|                      # .1
+          (?:\b[0-9]+\b(?!\.))                     # 1
+        )(?!\$)
+      captures:
+        0: constant.numeric.decimal.ts
+        1: meta.delimiter.decimal.period.ts
+        2: meta.delimiter.decimal.period.ts
+        3: meta.delimiter.decimal.period.ts
+        4: meta.delimiter.decimal.period.ts
+        5: meta.delimiter.decimal.period.ts
+        6: meta.delimiter.decimal.period.ts
+  triple-statement:
+    - match: \-\-\-
+      captures:
+        0: punctuation.triple.open.tl
+      push:
+        - meta_scope: keyword.control.triple.tl
+        - match: \-\-\-
+          captures:
+            0: punctuation.triple.close.tl
+          pop: true
+        - match: \b(types|functions)\b
+          scope: keyword.control.triple.name.tl
+        - match: \b(.*)\b
+          scope: invalid.illegal
